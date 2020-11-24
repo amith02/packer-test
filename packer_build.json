@@ -1,0 +1,59 @@
+{
+    "variables": {
+    "vpc_region": "${vpc_region}",
+    "vpc_id": "${vpc_id}",
+    "vpc_public_sn_id": "${vpc_public_sn_id}",
+    "vpc_public_sg_id": "${vpc_public_sg_id}",
+    "source_ami": "${source_ami}",
+    "instance_type": "${instance_type}",
+    "ssh_username": "${ssh_username}"
+  },
+    "builders": [
+    {
+      "type": "amazon-ebs",
+      "access_key": "{{user `aws_access_key`}}",
+      "secret_key": "{{user `aws_secret_key`}}",
+      "region": "{{user `vpc_region`}}",
+      "vpc_id": "{{user `vpc_id`}}",
+      "subnet_id": "{{user `vpc_public_sn_id`}}",
+      "associate_public_ip_address": true,
+      "security_group_id": "{{user `vpc_public_sg_id`}}",
+      "source_ami_filter": {
+        "filters": {
+         "virtualization-type": "hvm",
+         "name": "ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*",
+         "root-device-type": "ebs"
+        },
+        "owners": [
+         "679593333241"
+        ],
+        "most_recent": true
+       },
+      "instance_type": "{{user `instance_type`}}",
+      "ssh_username": "{{user `ssh_username`}}",
+      "ami_name": "gold-ami-ubuntu_18.04_v1-{{isotime | clean_resource_name}}",
+      "ami_regions": [ "ap-south-1", "us-east-2" ],
+      "ami_users": [ "923525235239", "825342718403"]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "script": "./scripts/Inspector_Agent_Install.sh"
+    },
+    {
+      "type": "shell",
+      "execute_command": "sudo -u root /bin/bash -c '{{.Path}}'",
+      "script": "./scripts/Ubuntu_CIS_Recommendations.sh"
+    }
+    {
+    "type": "shell",
+    "inline": [
+      "curl -o "/tmp/inspector_install" https://inspector-agent.amazonaws.com/linux/latest/install",
+      "sudo bash /tmp/inspector_install",
+      "sudo /etc/init.d/awsagent start",
+      "rm -rf /tmp/inspector_install"
+        ]  
+    }
+  ]
+}
